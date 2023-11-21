@@ -1,0 +1,142 @@
+/*
+    Autor JoÃ£o Vitor O. G. Santos
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <locale.h>
+#include <string.h>
+#include <ctype.h>
+#include <time.h> 
+#define plv 4
+#define tam 100
+
+void controler();void busca();void resul();
+void minuscula();void verificador();
+
+int main(){
+	setlocale(LC_ALL,"Portuguese");
+	controler();
+	return 0;
+}
+
+void controler(){
+	int recussividade = 0, calculos = 0 ;
+	double time_spent = 0.0;
+ 	clock_t begin = clock();
+  	
+	int qntPalavras = (plv-1);
+  	char palavras[plv][tam]={"if","else","for","while"};
+
+	FILE *arq;
+  	arq=fopen("teste.txt","r");
+  	
+  	if(arq==NULL)
+  	{
+  		printf("\n Erro ao abrir arquivo\n");
+  		exit(1);
+	}
+  	
+  	int retorno[plv+1];
+  
+  	memset(retorno,0,plv*sizeof(int)); // duvida	
+	
+	busca(arq,palavras,retorno,&recussividade,&calculos);
+  	fclose(arq);
+	
+	resul(palavras,retorno,0,0,&recussividade,calculos,0);
+	
+	clock_t end = clock();
+    time_spent += (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("Tempo de execução do programa: %f segundos\n",time_spent);
+}
+
+void busca(FILE *arquivo,char matriz[plv][tam],int retorno[plv],int *recussividade,int *calculos){
+	
+	
+  	char texto[tam]; 
+  	int index = 0;
+  	if((fscanf(arquivo,"%s",texto)>0))
+    {  
+    	minuscula(texto,texto,index,recussividade);
+    	verificador(matriz,texto,retorno,index,recussividade,calculos); 
+		(*recussividade)++;  
+    	busca(arquivo,matriz,retorno,recussividade,calculos);	
+	}
+	
+}
+
+void minuscula(char maiusculo[tam], char minusculo[tam],int index,int *recussividade){
+  
+  	if(maiusculo[index]!='\0')
+	{
+    	minusculo[index] = tolower(maiusculo[index]);
+    	index++;
+    	(*recussividade)++; 
+    	minuscula(maiusculo,minusculo,index,recussividade);
+  	}
+}
+
+void verificador(char palavra[plv][tam], char texto[tam], int retorno[plv],int index,int *recussividade,int *calculos){
+  
+  	int tamPalavra = strlen(palavra[index]),tamTexto = strlen(texto);
+  	int qntPalavras = (plv-1),letraFinal = (tamTexto-1);
+    if(strcmp(texto, "=") == 0){
+      (*calculos)++;
+    
+      }else if( (strncmp(palavra[index],texto,tamPalavra)) == 0)
+    {
+     
+      if(texto[tamPalavra] == '\0' || texto[tamPalavra]== '(' || texto[tamPalavra] == '{')
+      {
+        retorno[index]++;
+        index=-1;
+      }  
+    }else if(texto[0]=='}' && texto[1] != '\0' && index == 0)
+    {        
+	    char *tempPalavra;
+        tempPalavra = strtok(texto,"}");
+        (*recussividade)++; 
+        verificador(palavra,tempPalavra,retorno,index,recussividade,calculos);
+    }
+  
+  	if( index!=-1 && index<(qntPalavras) )
+	{  
+    	index++;
+    	(*recussividade)++; 
+      	verificador(palavra,texto,retorno,index,recussividade,calculos);    
+    }
+}
+
+void resul(char palavras[plv][tam], int retorno[plv],int proces,int index,int *recussividade,int calculos,int soma){
+	
+  
+  	if( (index != 0) && (index<plv) )
+  	{
+      
+  		proces = proces+retorno[index];
+    	printf("%i *%s* encontado(s)\n",retorno[index],palavras[index]);
+    	soma = soma+(retorno[index]*2);
+      index++;
+    	(*recussividade)++;
+    	resul(palavras,retorno,proces,index,recussividade,calculos,soma);
+      
+  	}else if(index == 0)
+  	{
+  		proces = proces+retorno[index];
+    	printf("\nA analise do arquivo retornou os seguintes dados:\n\nEstruturas não simples [Peso 2]\n\n");
+    	printf("%i *%s* encontado(s)\n",retorno[index],palavras[index]);
+    	soma = soma+(retorno[index]*2);
+      index++;
+    	(*recussividade)++; 
+    	resul(palavras,retorno,proces,index,recussividade,calculos,soma);
+  	}else{
+      
+  		proces=2*(proces*proces)+5*proces;
+  	   	printf("\n\nEstrutura simples [Peso 1]: \n\nNumero de processos: %i\n",proces);
+  	   	printf("Quantidade de recussividades: %i\n",*recussividade);
+      printf("Numero de calculos: %i\n\n",calculos);
+      soma = soma + proces + *recussividade + calculos;
+      printf("Custo total: %i\n\n",soma);
+      
+	}
+}
